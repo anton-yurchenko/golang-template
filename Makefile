@@ -21,7 +21,7 @@ lint: $(GO_LINTER)
 # initialize
 .PHONY: init
 init:
-	@mv .vscode/launch-template.json .vscode/launch.json || exit 0
+	@mv .vscode/launch-template.json .vscode/launch.json 2>/dev/null || :
 	@rm -f go.mod
 	@rm -f go.sum
 	@rm -rf ./vendor
