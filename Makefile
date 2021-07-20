@@ -1,33 +1,23 @@
-# global
 BINARY := $(notdir $(CURDIR))
 GO_BIN_DIR := $(GOPATH)/bin
 OSES := linux darwin windows
 ARCHS := amd64
 
-# unit tests
 test: lint
-	@echo "unit testing..."
 	@go test $$(go list ./... | grep -v vendor | grep -v mocks) -race -coverprofile=coverage.txt -covermode=atomic
 
-# lint
 .PHONY: lint
 lint: $(GO_LINTER)
-	@echo "vendoring..."
-	@go mod vendor
 	@go mod tidy
-	@echo "linting..."
+	@go mod vendor
 	@golangci-lint run ./...
 
-# initialize
 .PHONY: init
 init:
 	@mv .vscode/launch-template.json .vscode/launch.json 2>/dev/null || :
-	@rm -f go.mod
-	@rm -f go.sum
-	@rm -rf ./vendor
-	@go mod init $$(pwd | awk -F'/' '{print "github.com/"$$(NF-1)"/"$$NF}')
+	@rm -rf go.mod go.sum ./vendor
+	@go mod init $$(pwd | awk -F'/' '{print $$NF}')
 
-# linter
 GO_LINTER := $(GO_BIN_DIR)/golangci-lint
 $(GO_LINTER):
 	@echo "installing linter..."
