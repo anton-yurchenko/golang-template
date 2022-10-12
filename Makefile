@@ -1,16 +1,23 @@
-BINARY := $(notdir $(CURDIR))
-GO_BIN_DIR := $(GOPATH)/bin
+I := "⚪"
+E := "🔴"
+NAME := $(notdir $(CURDIR))
 OSES := linux darwin windows
-ARCHS := amd64
+ARCHS := amd64 arm64
 
 test: lint
-	@go test $$(go list ./... | grep -v vendor | grep -v mocks) -race -coverprofile=coverage.txt -covermode=atomic
+	@echo "$(I) unit testing..."
+	@go test -v $$(go list ./... | grep -v vendor | grep -v mocks) -race -coverprofile=coverage.txt -covermode=atomic
 
 .PHONY: lint
 lint: $(GO_LINTER)
-	@go mod tidy
-	@go mod vendor
-	@golangci-lint run ./...
+	@echo "$(I) installing dependencies..."
+	@go get ./... || (echo "$(E) 'go get' error"; exit 1)
+	@echo "$(I) updating imports..."
+	@go mod tidy || (echo "$(E) 'go mod tidy' error"; exit 1)
+	@echo "$(I) vendoring..."
+	@go mod vendor || (echo "$(E) 'go mod vendor' error"; exit 1)
+	@echo "$(I) linting..."
+	@golangci-lint run ./... || (echo "$(E) linter error"; exit 1)
 
 .PHONY: init
 init:
@@ -18,25 +25,27 @@ init:
 	@rm -rf go.mod go.sum ./vendor
 	@go mod init $$(pwd | awk -F'/' '{print $$NF}')
 
-GO_LINTER := $(GO_BIN_DIR)/golangci-lint
-$(GO_LINTER):
-	@echo "installing linter..."
-	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
-
-.PHONY: release
+.PHONY: build
 release: test
+	@echo "$(I) cleaning..."
 	@rm -rf ./dist
 	@mkdir -p dist
 	@for ARCH in $(ARCHS); do \
 		for OS in $(OSES); do \
+			@echo "$(I) building for $$OS-$$ARCH..."
 			if test "$$OS" = "windows"; then \
-				GOOS=$$OS GOARCH=$$ARCH go build -o dist/$(BINARY)-$$OS-$$ARCH.exe; \
+				GOOS=$$OS GOARCH=$$ARCH go build -o dist/$(NAME)-$$OS-$$ARCH.exe; \
 			else \
-				GOOS=$$OS GOARCH=$$ARCH go build -o dist/$(BINARY)-$$OS-$$ARCH; \
+				GOOS=$$OS GOARCH=$$ARCH go build -o dist/$(NAME)-$$OS-$$ARCH; \
 			fi; \
 		done; \
 	done
 
 .PHONY: codecov
 codecov: test
-	@go tool cover -html=coverage.txt
+	@go tool cover -html=coverage.txt || (echo "$(E) 'go tool cover' error"; exit 1)
+
+GO_LINTER := $(GOPATH)/bin/golangci-lint
+$(GO_LINTER):
+	@echo "installing linter..."
+	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
