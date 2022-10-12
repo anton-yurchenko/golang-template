@@ -21,6 +21,7 @@ lint: $(GO_LINTER)
 
 .PHONY: init
 init:
+	@echo "$(I) initializing..."
 	@mv .vscode/launch-template.json .vscode/launch.json 2>/dev/null || :
 	@rm -rf go.mod go.sum ./vendor
 	@go mod init $$(pwd | awk -F'/' '{print $$NF}')
