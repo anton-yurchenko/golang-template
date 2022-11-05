@@ -4,10 +4,6 @@ NAME := $(notdir $(CURDIR))
 OSES := linux darwin windows
 ARCHS := amd64 arm64
 
-test: lint
-	@echo "$(I) unit testing..."
-	@go test -v $$(go list ./... | grep -v vendor | grep -v mocks) -race -coverprofile=coverage.txt -covermode=atomic
-
 .PHONY: lint
 lint: $(GO_LINTER)
 	@echo "$(I) installing dependencies..."
@@ -18,19 +14,33 @@ lint: $(GO_LINTER)
 	@go mod vendor || (echo "$(E) 'go mod vendor' error"; exit 1)
 	@echo "$(I) linting..."
 	@golangci-lint run ./... || (echo "$(E) linter error"; exit 1)
+	$(MAKE) test
 
 .PHONY: init
 init:
 	@echo "$(I) initializing..."
 	@mv .vscode/launch-template.json .vscode/launch.json 2>/dev/null || :
-	@rm -rf go.mod go.sum ./vendor
+	@rm -rf go.mod go.sum ./vendor ./mocks
 	@go mod init $$(pwd | awk -F'/' '{print $$NF}')
+
+.PHONY: codecov
+codecov: test
+	@go tool cover -html=coverage.txt || (echo "$(E) 'go tool cover' error"; exit 1)
+
+.PHONY: test
+test:
+	@echo "$(I) regenerating mocks package..."
+	# @mockery --name=<interface-name>
+	# @mockery --name=<interface-name> --dir=vendor/github.com/<org>/<proj>/
+	# @mockery --name=<interface-name> 
+	@echo "$(I) unit testing..."
+	@go test -v $$(go list ./... | grep -v vendor | grep -v mocks) -race -coverprofile=coverage.txt -covermode=atomic
 
 .PHONY: build
 release: test
 	@echo "$(I) cleaning..."
 	@rm -rf ./dist
-	@mkdir -p dist
+	@mkdir dist
 	@for ARCH in $(ARCHS); do \
 		for OS in $(OSES); do \
 			@echo "$(I) building for $$OS-$$ARCH..."
@@ -42,11 +52,7 @@ release: test
 		done; \
 	done
 
-.PHONY: codecov
-codecov: test
-	@go tool cover -html=coverage.txt || (echo "$(E) 'go tool cover' error"; exit 1)
-
 GO_LINTER := $(GOPATH)/bin/golangci-lint
 $(GO_LINTER):
 	@echo "installing linter..."
-	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	@go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
