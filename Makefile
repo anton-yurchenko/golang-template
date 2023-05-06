@@ -20,7 +20,7 @@ lint: $(GO_LINTER)
 init:
 	@echo "$(I) initializing..."
 	@rm -rf go.mod go.sum ./vendor ./mocks
-	@go mod init $$(pwd | awk -F'/' '{print $$NF}')
+	@go mod init $$(pwd | awk -F'/' '{print $$NF}') || (echo "$(E) initialization error"; exit 1)
 
 .PHONY: codecov
 codecov: test
@@ -54,4 +54,4 @@ release: test
 GO_LINTER := $(GOPATH)/bin/golangci-lint
 $(GO_LINTER):
 	@echo "installing linter..."
-	@go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	@go get -u github.com/golangci/golangci-lint/cmd/golangci-lint || (echo "$(E) linter installation error"; exit 1)
