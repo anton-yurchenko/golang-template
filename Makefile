@@ -8,14 +8,14 @@ ARCHS := amd64 arm64
 lint: $(GO_LINTER)
 	@echo "$(I) Executing command: go get"
 	@GOPRIVATE=github.com/* go get ./... || (echo "$(E) 'go get' error"; exit 1)
-	@echo "$(I) Executing command: mockery"
-	@mockery
+	# @echo "$(I) Executing command: mockery"
+	# @mockery || (echo "$(E) 'mockery' error"; exit 1)
 	@echo "$(I) Executing command: go mod tidy"
 	@GOPRIVATE=github.com/* go mod tidy || (echo "$(E) 'go mod tidy' error"; exit 1)
 	@echo "$(I) Executing command: go mod vendor"
 	@GOPRIVATE=github.com/* go mod vendor || (echo "$(E) 'go mod vendor' error"; exit 1)
 	@echo "$(I) Executing command: golangci-lint"
-	@golangci-lint run ./... --exclude-dirs 'mocks|vendor|test' || (echo "$(E) linter error"; exit 1)
+	@golangci-lint run ./... --exclude-dirs 'mocks|vendor|test' || (echo "$(E) golangci-lint error"; exit 1)
 	$(MAKE) test
 
 .PHONY: init
